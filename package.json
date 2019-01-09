@@ -1,0 +1,26 @@
+{
+  "name": "tosbot",
+  "version": "1.0.0",
+  "description": "Terms of Services bot",
+  "main": "wrapper.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jabrils-Discord-Server/ToS-Bot.git"
+  },
+  "keywords": [
+    "js"
+  ],
+  "author": "glucic",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jabrils-Discord-Server/ToS-Bot/issues"
+  },
+  "homepage": "https://github.com/Jabrils-Discord-Server/ToS-Bot#readme",
+  "dependencies": {
+    "discord.js": "^11.4.2",
+    "node-wrap": "^0.1.0"
+  }
+}
