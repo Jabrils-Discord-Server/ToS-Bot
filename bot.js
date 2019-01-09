@@ -17,7 +17,7 @@ client.on('guildMemberAdd', member => {
 
 client.on("message", message => {
     if(message.author.bot) return;
-    var perms = message.member.roles.find("name", "user++") || message.member.roles.find("name", "Rot13")  || message.member.roles.find("name", "Arbiter of Fate")
+    var perms = message.member.roles.find("name", "user++") || message.member.roles.find("name", "Rot13")  || message.member.roles.find("name", "Arbiter of Fate");
 
     if (message.channel.id === '528717576357019648') {
         if (message.content == "!agree") {
@@ -28,9 +28,11 @@ client.on("message", message => {
             return;
         }
         else {
-            if (perms) return;
-            message.delete();
-            return;
+            if (perms) {
+				if(message.content == "!restart") message.delete().then(m=>process.exit(2));
+				else return;
+			}
+            return message.delete();
         }
     }
 
