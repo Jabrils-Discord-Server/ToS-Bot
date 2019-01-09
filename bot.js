@@ -17,7 +17,7 @@ client.on('guildMemberAdd', member => {
 
 client.on("message", message => {
     if(message.author.bot) return;
-    var perms = message.member.roles.find("name", "user++") || message.member.roles.find("name", "Rot13")  || message.member.roles.find("name", "Arbiter of Fate");
+    var perms = message.member.roles.find(role => role.name == "user++") || message.member.roles.find(role => role.name == "Rot13")  || message.member.roles.find(role => role.name == "Arbiter of Fate");
 
     if (message.channel.id === '528717576357019648') {
         if (message.content == "!agree") {
