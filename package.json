@@ -21,6 +21,6 @@
   "homepage": "https://github.com/Jabrils-Discord-Server/ToS-Bot#readme",
   "dependencies": {
     "discord.js": "^11.4.2",
-    "node-wrap": "^0.1.0"
+    "node-wrap": "^0.1.2"
   }
 }
