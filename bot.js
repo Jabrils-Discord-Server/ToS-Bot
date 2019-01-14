@@ -20,6 +20,12 @@ client.on('guildMemberAdd', member => {
     member.addRole(addRole_newcomer);
 });
 
+client.on("guildMemberRemove", member => {
+    console.log("\x1b[31m\x1b[1m[leave]\x1b[0m " + member.user.tag);
+    var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
+    return botLogs.send(`❌ \`${member.user.tag}\` has left the server`);
+});
+
 client.on("message", message => {
     if(message.author.bot && message.channel.id === '528717576357019648' && message.author.id != '532483662705590273') return message.delete();
     if(message.author.bot) return;
@@ -29,7 +35,7 @@ client.on("message", message => {
     if (message.channel.id === '528717576357019648') {
 		if (message.content == "!agree") {
             console.log("\x1b[32m\x1b[1m[agree]\x1b[0m " + message.author.tag);
-            message.delete();
+            message.react("✅").then(m => message.delete(3000));
             let removeRole_newcomer = message.member.guild.roles.find(role => role.name == "newcomer");
             message.member.send("Great, you made it :smiley:\n\nYou now have access to the entire server! \n Please read the #info channel completely as there's important information there.\nAlso tell us a bit more about yourself, your programming skills and why you joined the server.\n(Doing this will give you a few perks)").then(m => {
                 let URLembed = new Discord.RichEmbed()
@@ -42,10 +48,10 @@ client.on("message", message => {
             
             message.member.removeRole(removeRole_newcomer);
 			var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
-            return botLogs.send(`${message.author.tag} has agreed to the <#528717576357019648>`);
+            return botLogs.send(`👍 \`${message.author.tag}\` has agreed to the <#528717576357019648>`);
         }
         else if(message.content == "!ping") {
-            message.channel.send("Pong!").then(m => {
+            message.channel.send("📶 Pong!").then(m => {
                 message.delete();
                 setTimeout(()=>{
                     m.delete();
@@ -55,7 +61,7 @@ client.on("message", message => {
         else {
             if (perms) {
 				var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
-				if(message.content == "!restart") botLogs.send(`${message.author.tag} just restarted me`).then(m => {
+				if(message.content == "!restart") botLogs.send(`♻ \`${message.author.tag}\` just restarted me`).then(m => {
 					message.delete().then(r => {
 						console.log("\x1b[31m\x1b[1m[restart]\x1b[0m " + message.author.tag);
 						return process.exit(2);
@@ -67,12 +73,23 @@ client.on("message", message => {
         }
     }
 
+    var isbadword = false;
     for (var i in filter) {
-        if (message.content.toLowerCase().includes(filter[i].toLowerCase())) {
-            message.channel.send(message.member + " Do you kiss your mother with that mouth?");
-            message.delete();
-            return;
-        }
+        if (message.content.toLowerCase().includes(filter[i].toLowerCase())) isbadword = true;
+    }
+    if(isbadword) {
+        message.channel.send(message.member + " do you kiss your mother with that mouth?");
+        message.delete().then(m => {
+            var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
+            let embed = new Discord.RichEmbed()
+                .setTitle(`❗ Potentially bad message by \`${message.author.tag}\`:`)
+                .addField("Channel:", `<#${message.channel.id.toString()}>`, false)
+                .addBlankField()
+                .addField("Content:", `\`\`\`\n${message.content}\n\`\`\``, false)
+                .setFooter(new Date().toUTCString());
+
+            return botLogs.send(embed);
+        });
     }
 });
 
