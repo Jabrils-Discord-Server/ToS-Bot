@@ -1,6 +1,6 @@
 require("node-wrap")("./bot.js", {
     restartOnCrash: true,
-    crashTimeout: 3000,
+    crashTimeout: 1000,
     restartTimeout: 0,
     console: true,
     logFile: "./wrapper.log",
