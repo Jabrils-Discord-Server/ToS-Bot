@@ -5,7 +5,7 @@ const config = require("./config.json");
 const filter = require("./filter.js");
 const newcomerCheck = require("./newcomerCheck.js");
 
-const randomActivities = ["Abusing the Non-Mods", "Pruning all the newcomers", "Kissing your mother with that mouth"];
+const randomActivities = ["Abusing the Non-Mods", "Pruning all the newcomers", "Kissing your mother with that mouth", "Banning @everyone", "Secretly overthrowing the admins"];
 
 const iconURL = "https://sv443.net/cdn/other/tosboticon.png";
 
@@ -44,7 +44,7 @@ client.on('guildMemberAdd', member => {
         let URLembed = new Discord.RichEmbed()
             .setTitle("(Link to the #rules channel)")
             .setURL("https://discordapp.com/channels/430932202621108275/528717576357019648");
-        member.send(URLembed);
+        member.send(URLembed).catch(err => {});
     });
     member.addRole(addRole_newcomer);
 
@@ -86,12 +86,25 @@ client.on("guildMemberRemove", member => {
     return botLogs.send(`❌ \`${member.user.tag}\` has left the server`);
 });
 
+const getCircularReplacer = () => {
+    const seen = new WeakSet();
+    return (key, value) => {
+      if (typeof value === "object" && value !== null) {
+        if (seen.has(value)) {
+          return;
+        }
+        seen.add(value);
+      }
+      return value;
+    };
+  };
+
 client.on("message", message => {
     if(message.author.bot) return false;
 
     var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
     if (message.nonce === null && message.attachments.size <= 0 && !message.author.bot &&  message.guild && message.author.avatarURL == null){
-        botLogs.send(new Discord.RichEmbed().setDescription(`A potential userbot (${message.member}) just sent a message in ${message.channel}.`).addField(`Content:`, `\`\`\`\n${message.content.toString().replace(/`/gm, "\\`")}\n\`\`\``));
+        botLogs.send(new Discord.RichEmbed().setTitle(`Potential userbot: ${message.member}`));
     }
 
 
@@ -113,7 +126,10 @@ client.on("message", message => {
         advancedPerms = false;
     }
 
+    checkBadMessage(message);
+
     var messageContent = message.content.toLowerCase().replace(/([\^\`\´\?\.\-\_\,\s*])/gm, "");
+    let msgC = message.content.toLowerCase().replace(/([\^\`\´\?\.\-\_\,*])/gm, "");
     if(advancedPerms && messageContent == "!prunenewcomers") {
         var allNewcomers = [];
         var newcomerRole = message.member.guild.roles.find(role => role.name == "newcomer");
@@ -129,12 +145,11 @@ client.on("message", message => {
                     if(r.first().emoji.name == "✅") m.delete().then(m=>{
                         try {
                             allNewcomers.forEach(member => {
-                                member.kick().then(()=>{
-                                    return message.channel.send(`✅ Successfully pruned all ${allNewcomers.length} newcomers!`);
-                                }).catch(err => {
+                                member.kick().catch(err => {
                                     return message.channel.send(`‼ Couldn't prune all ${allNewcomers.length} newcomers due to an error: ${err}`);
                                 });
                             });
+                            return message.channel.send(`✅ Successfully pruned all ${allNewcomers.length} newcomers!`);
                         }
                         catch(err) {
                             return message.channel.send(`‼ Fuck, I am error, please fix: ${err}`);
@@ -147,11 +162,67 @@ client.on("message", message => {
             });
         });
     }
-    if(advancedPerms && messageContent == "!checknewcomers") {
+    else if(advancedPerms && messageContent == "!checknewcomers") {
         message.channel.send("Checking all newcomers...");
         newcomerCheck.checkNewcomers(message.guild, member => {
             message.channel.send("Kicked " + member);
         });
+    }
+    else if(perms && msgC.split(" ")[0] == "!mark") {
+        var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
+        let markNbr = parseInt(msgC.split(" ")[1]);
+        if(markNbr <= 0 || markNbr > 100 || isNaN(markNbr)) {
+            message.author.send("The number of messages to mark has to be above 0 and below 250, not " + markNbr + ". I set it to the default of 25 instead.");
+            markNbr = 25;
+        }
+        message.channel.fetchMessages({limit: (markNbr + 1)}).then(r => {
+            message.delete();
+            let rArr = r.array(), resArray = [];
+            for(let i = 0; i < rArr.length; i++) {
+                resArray[i] = {
+                    "author": rArr[i].author,
+                    "content": rArr[i].content.toString(),
+                    "timestamp": rArr[i].createdAt.toUTCString()
+                };
+            }
+            resArray.shift();
+
+            var embed = new Discord.RichEmbed()
+                .setTitle(`Message log of **#${message.channel.name}** - (**${markNbr}** messages in total) - Date/Time (UTC): **${new Date().toUTCString()}**`)
+                .setColor("#5585d1");
+
+            let chars = 0;
+            for(let i = 0; i < resArray.length; i++) {
+                chars += resArray[i].content.length;
+                let e = resArray[i];
+                if((i == 0 || i % 25 != 0) && chars <= 1850) {
+                    let fs = require("fs");
+                    let ec = e.content.replace(/`/gm, "\\`");
+                    embed.addField(`By: **${e.author.tag}** - Time: **${e.timestamp}**`, `\`\`\`\n${!jsl.isEmpty(ec) ? ec : "(Empty or RichEmbed)"}\n\`\`\``);
+                }
+                else {
+                    chars = 0;
+                    botLogs.send(embed).catch(err => message.channel.send(`Error: ${err}`));
+                    embed = new Discord.RichEmbed()
+                        .setTitle(`Message log of **#${message.channel.name}** - (**${markNbr}** messages in total) - Date/Time (UTC): **${new Date().toUTCString()}**`)
+                        .setColor("#5585d1"); 
+                }
+            };
+
+            botLogs.send(embed).catch(err => message.channel.send(`Error: ${err}`));
+        }).catch(err => botLogs.send(`Error: ${err}`));
+        return message.author.send(`I successfully logged the last **${markNbr}** messages from the channel **#${message.channel.name}** to the log channel.`);
+    }
+
+    if (perms) {
+        var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
+        if(messageContent == "!restart") botLogs.send(`♻ \`${message.author.tag}\` just restarted me`).then(m => {
+            message.delete().then(r => {
+                console.log("\x1b[31m\x1b[1m[restart]\x1b[0m " + message.author.tag);
+                return process.exit(2);
+            }).catch(err => console.log("err! " + err));
+        }).catch(err => console.log("err2! " + err));
+        else return;
     }
 
     if (message.channel.id === '528717576357019648') {
@@ -164,7 +235,7 @@ client.on("message", message => {
             let URLembed = new Discord.RichEmbed()
                 .setTitle("Great, you made it :smiley:")
                 .setDescription(`You now have access to the entire server! \n Please read [the #info channel](https://discordapp.com/channels/430932202621108275/430981000907194370) completely as there's important information there.\nAlso tell us a bit more about yourself, your programming skills and why you joined the server in [the #introduce-yourself channel](https://discordapp.com/channels/430932202621108275/430970251174215690).\n(Doing this will give you a few perks)\n\n\nThank you and have fun on the server! :)`)
-            message.member.send(URLembed);
+            message.member.send(URLembed).catch(err => {});
             
             message.member.removeRole(removeRole_newcomer);
 			var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
@@ -178,22 +249,8 @@ client.on("message", message => {
                 }, 3000);
             });
         }
-        else {
-            if (perms) {
-				var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
-				if(messageContent == "!restart") botLogs.send(`♻ \`${message.author.tag}\` just restarted me`).then(m => {
-					message.delete().then(r => {
-						console.log("\x1b[31m\x1b[1m[restart]\x1b[0m " + message.author.tag);
-						return process.exit(2);
-					}).catch(err => console.log("err! " + err));
-				}).catch(err => console.log("err2! " + err));
-				else return;
-			}
-            else return message.delete();
-        }
+        else if(!perms && !advancedPerms) message.delete();
     }
-
-    checkBadMessage(message);
 });
 
 function checkBadMessage(message) {
@@ -213,10 +270,11 @@ function checkBadMessage(message) {
             if(!message.author.bot) {
                 var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
                 let embed = new Discord.RichEmbed()
-                    .setTitle(`❗ Potentially bad message by \`${message.author.tag}\`:`)
+                    .setTitle(`‼ Potentially bad message by \`${message.author.tag}\`:`)
                     .addField("Channel:", `<#${message.channel.id.toString()}>`, false)
                     .addBlankField()
                     .addField("Content:", `\`\`\`\n${originalMessageContent.replace(/`/gm, "\`")}\n\`\`\``, false)
+                    .setColor("#ff0000")
                     .setFooter(new Date().toUTCString());
 
                 return botLogs.send(embed).catch(err => {});
