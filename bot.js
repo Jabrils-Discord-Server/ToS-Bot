@@ -30,6 +30,14 @@ client.on("ready", () => {
         newcomerCheck.checkNewcomers(client.guilds.find(guild => guild.id == "430932202621108275"));
     }, 20 * 60 * 1000); // every 20 mins
 
+    setInterval(()=>{
+        let d = new Date();
+        if(d.getHours() == 0 && d.getMinutes() == 0) {
+            logCurrentDate();
+        }
+    }, 60 * 1000);
+    logCurrentDate();
+
     client.user.setAvatar(iconURL).catch(err => {});
 });
 
@@ -282,6 +290,13 @@ function checkBadMessage(message) {
         }).catch(err => {});
     }
 }
+
+function logCurrentDate() {
+    let d = new Date();
+    console.log(`\n\x1b[33m\x1b[1m[x]\x1b[0m ${d.getDate() < 10 ? "0" : ""}${d.getDate()}-${d.getMonth() + 1 < 10 ? "0" : ""}${d.getMonth() + 1}-${d.getFullYear()}\n`);
+}
+
+
 
 
 client.login(config.token);
