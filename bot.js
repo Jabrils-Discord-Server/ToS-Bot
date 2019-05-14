@@ -7,6 +7,8 @@ const newcomerCheck = require("./newcomerCheck.js");
 
 const randomActivities = ["Abusing the Non-Mods", "Pruning all the newcomers", "Kissing your mother with that mouth", "Banning @everyone", "Secretly overthrowing the admins"];
 
+const badWordResponses = ["%USER%, do you kiss your mother with that mouth?", "%USER%, \\*beep boop\\* I detect bad word \\*beep boop\\*"];
+
 const iconURL = "https://sv443.net/cdn/other/tosboticon.png";
 
 function randomActivity() {
@@ -105,10 +107,12 @@ const getCircularReplacer = () => {
       }
       return value;
     };
-  };
+};
 
 client.on("message", message => {
-    if(message.author.bot) return false;
+    if(!message.author.bot && message.channel.type == "dm") return gotDM(message.content, message.channel);
+
+    if(message.author.bot || !message.guild) return false;
 
     var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
     if (message.nonce === null && message.attachments.size <= 0 && !message.author.bot &&  message.guild && message.author.avatarURL == null){
@@ -138,7 +142,7 @@ client.on("message", message => {
 
     var messageContent = message.content.toLowerCase().replace(/([\^\`\´\?\.\-\_\,\s*])/gm, "");
     let msgC = message.content.toLowerCase().replace(/([\^\`\´\?\.\-\_\,*])/gm, "");
-    if(advancedPerms && messageContent == "!prunenewcomers") {
+    if(perms && messageContent == "!prunenewcomers") {
         var allNewcomers = [];
         var newcomerRole = message.member.guild.roles.find(role => role.name == "newcomer");
         message.guild.members.forEach(member => {
@@ -150,11 +154,11 @@ client.on("message", message => {
                     return ['✅'].includes(reaction.emoji.name) && user.id === message.author.id;
                 };
                 m.awaitReactions(filter, { max: 1, time: (5 * 1000), errors: ['time'] }).then(r => {
-                    if(r.first().emoji.name == "✅") m.delete().then(m=>{
+                    if(r.first().emoji.name == "✅") m.delete().then(m => {
                         try {
                             allNewcomers.forEach(member => {
                                 member.kick().catch(err => {
-                                    return message.channel.send(`‼ Couldn't prune all ${allNewcomers.length} newcomers due to an error: ${err}`);
+                                    return message.channel.send(`‼ Couldn't prune member ${member.user.tag} due to an error: ${err}`);
                                 });
                             });
                             return message.channel.send(`✅ Successfully pruned all ${allNewcomers.length} newcomers!`);
@@ -170,7 +174,17 @@ client.on("message", message => {
             });
         });
     }
-    else if(advancedPerms && messageContent == "!checknewcomers") {
+    else if(perms && messageContent.startsWith("!say")) {
+        try {
+            message.delete().then(() => {
+                message.channel.send(message.content.split("!say")[1].substring(1));
+            });
+        }
+        catch(err) {
+            message.channel.send(`Error while executing "!say" command: ${err}`);
+        }
+    }
+    else if(perms && messageContent == "!checknewcomers") {
         message.channel.send("Checking all newcomers...");
         newcomerCheck.checkNewcomers(message.guild, member => {
             message.channel.send("Kicked " + member);
@@ -190,7 +204,7 @@ client.on("message", message => {
                 resArray[i] = {
                     "author": rArr[i].author,
                     "content": rArr[i].content.toString(),
-                    "timestamp": rArr[i].createdAt.toUTCString()
+                    "timestamp": new Date(rArr[i].createdAt).toUTCString().replace("GMT", "UTC")
                 };
             }
             resArray.shift();
@@ -200,34 +214,37 @@ client.on("message", message => {
                 .setColor("#5585d1");
 
             let chars = 0;
+
+            resArray = resArray.reverse();
+
             for(let i = 0; i < resArray.length; i++) {
                 chars += resArray[i].content.length;
                 let e = resArray[i];
-                if((i == 0 || i % 25 != 0) && chars <= 1850) {
+                if((i == 0 || i % 25 != 0) && chars <= 900) {
                     let fs = require("fs");
                     let ec = e.content.replace(/`/gm, "\\`");
-                    embed.addField(`By: **${e.author.tag}** - Time: **${e.timestamp}**`, `\`\`\`\n${!jsl.isEmpty(ec) ? ec : "(Empty or RichEmbed)"}\n\`\`\``);
+                    embed.addField(`By: **${e.author.tag}** - Time: **${e.timestamp}**`, `\`\`\`\n${!jsl.isEmpty(ec) ? ec : "(Image or RichEmbed)"}\n\`\`\``);
                 }
                 else {
                     chars = 0;
                     botLogs.send(embed).catch(err => message.channel.send(`Error: ${err}`));
                     embed = new Discord.RichEmbed()
-                        .setTitle(`Message log of **#${message.channel.name}** - (**${markNbr}** messages in total) - Date/Time (UTC): **${new Date().toUTCString()}**`)
+                        .setTitle(`Message log of **#${message.channel.name}** - (**${markNbr}** messages in total) - Date/Time of log creation (UTC): **${new Date().toUTCString()}**`)
                         .setColor("#5585d1"); 
                 }
             };
 
             botLogs.send(embed).catch(err => message.channel.send(`Error: ${err}`));
         }).catch(err => botLogs.send(`Error: ${err}`));
-        return message.author.send(`I successfully logged the last **${markNbr}** messages from the channel **#${message.channel.name}** to the log channel.`);
+        return;
     }
 
-    if (perms) {
+    if(advancedPerms) {
         var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
         if(messageContent == "!restart") botLogs.send(`♻ \`${message.author.tag}\` just restarted me`).then(m => {
             message.delete().then(r => {
                 console.log("\x1b[31m\x1b[1m[restart]\x1b[0m " + message.author.tag);
-                return process.exit(2);
+                process.exit(2);
             }).catch(err => console.log("err! " + err));
         }).catch(err => console.log("err2! " + err));
         else return;
@@ -257,7 +274,7 @@ client.on("message", message => {
                 }, 3000);
             });
         }
-        else if(!perms && !advancedPerms) message.delete();
+        else if(!perms && !perms) message.delete();
     }
 });
 
@@ -272,7 +289,8 @@ function checkBadMessage(message) {
         }
     }
     if(isbadword) {
-        message.channel.send(message.member + " do you kiss your mother with that mouth?").catch(err => {});
+        let response = badWordResponses[jsl.randRange(0, badWordResponses.length - 1)];
+        message.channel.send(response.replace("%USER%", message.member)).catch(err => {});
         message.author.send(`You might have said a bad word which I had to filter out!\n\n\n**Channel:** \`#${message.channel.name}\`\n\n**Message:**\n\`\`\`${originalMessageContent}\`\`\`\n\n**The filter triggered on the ${(triggerWords.length <= 1 ? "word:** \`" : "words:** \`") + jsl.readableArray(triggerWords, ", ", " and ")}\`\n\n\nPlease understand that we have to do this since we got quite a few trolls / spammers in the last couple of months.\n\nThanks :)`).catch(err => {});
         message.delete().then(m => {
             if(!message.author.bot) {
@@ -294,6 +312,36 @@ function checkBadMessage(message) {
 function logCurrentDate() {
     let d = new Date();
     console.log(`\n\x1b[33m\x1b[1m[x]\x1b[0m ${d.getDate() < 10 ? "0" : ""}${d.getDate()}-${d.getMonth() + 1 < 10 ? "0" : ""}${d.getMonth() + 1}-${d.getFullYear()}\n`);
+}
+
+/**
+ * Function gets executed when a user sends ToS a DM
+ * @param {String} content
+ * @param {Discord.User} user
+ */
+function gotDM(content, user) {
+    console.log(content);
+    if(content.startsWith("!report ")) {
+        let report = content.replace("!report ", "");
+        let rem = new Discord.RichEmbed()
+            .setTitle("**I just got a report:**")
+            .addField("**From:**", user)
+            .addField("**Content:**", report)
+            .setColor("#ff0000");
+        client.guilds.find(guild => guild.id == "430932202621108275").channels.find(channel => channel.id == "489599094793175041").send(rem).then(()=>{
+            user.send(`Successfully sent your report to the admins of the Cult of Jabril(s) server!`);
+        });
+    }
+    else {
+        let rem = new Discord.RichEmbed()
+            .setTitle("**I just got a DM:**")
+            .addField("**User:**", user)
+            .addField("**Content:**", content)
+            .setColor("#ff0000");
+        client.guilds.find(guild => guild.id == "430932202621108275").channels.find(channel => channel.id == "489605729624522762").send(rem).then(()=>{
+            user.send(`Your DM has been forwarded to the admins of the Cult of Jabril(s) server.`);
+        });
+    }
 }
 
 
