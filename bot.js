@@ -146,7 +146,7 @@ client.on("message", message => {
         var allNewcomers = [];
         var newcomerRole = message.member.guild.roles.find(role => role.name == "newcomer");
         message.guild.members.forEach(member => {
-            if(member.roles.has(newcomerRole.id)) allNewcomers.push(member);
+            if(member.roles.has(newcomerRole.id) && member.roles.size <= 2 && !perms && !advancedPerms) allNewcomers.push(member);
         });
         message.channel.send(`Should I really prune all ${allNewcomers.length} newcomers?\nClick the checkmark within 5 seconds to commence mass destruction (I really hope you know what you're doing).`).then(m => {
             m.react("✅").then(s => {
