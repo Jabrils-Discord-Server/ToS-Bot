@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const jsl = require("svjsl");
+const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const client = new Discord.Client();
 const config = require("./config.json");
 const filter = require("./filter.js");
@@ -23,6 +24,10 @@ const iconURL = "https://sv443.net/cdn/other/tosboticon.png";
 
 
 
+const treeDataChannelID = "637387745320370246";
+const guildID = "430932202621108275";
+
+
 
 function randomActivity() {
     let rand = jsl.randRange(0, (randomActivities.length - 1));
@@ -36,13 +41,13 @@ client.on('error', (err) => {
 
 
 client.on("ready", () => {
-    console.log(`\n\n\n\x1b[36m\x1b[1m[startup]\x1b[0m John has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
+    console.log(`\n\n\n\x1b[36m\x1b[1m[startup]\x1b[0m ToS has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
     randomActivity();
     setInterval(()=>randomActivity(), 15 * 60 * 1000); // every 15 mins
 
-    newcomerCheck.checkNewcomers(client.guilds.find(guild => guild.id == "430932202621108275"));
+    newcomerCheck.checkNewcomers(client.guilds.find(guild => guild.id == guildID));
     setInterval(()=>{
-        newcomerCheck.checkNewcomers(client.guilds.find(guild => guild.id == "430932202621108275"));
+        newcomerCheck.checkNewcomers(client.guilds.find(guild => guild.id == guildID));
     }, 20 * 60 * 1000); // every 20 mins
 
     setInterval(()=>{
@@ -50,8 +55,13 @@ client.on("ready", () => {
         if(d.getHours() == 0 && d.getMinutes() == 0) {
             logCurrentDate();
         }
-    }, 60 * 1000);
+    }, 60 * 1000); // every minute
     logCurrentDate();
+
+    refreshTreeCount();
+    setInterval(() => {
+        refreshTreeCount();
+    }, 1000 * 60);
 
     client.user.setAvatar(iconURL).then(() => {}).catch(err => {});
 });
@@ -124,7 +134,7 @@ client.on("message", message => {
     try {
         perms = message.member.roles.find(role => role.name == "user++") || message.member.roles.find(role => role.name == "Rot13")  || message.member.roles.find(role => role.name == "Arbiter of Fate") || false;
     }
-    catch {
+    catch(err) {
         perms = false;
     }
 
@@ -132,7 +142,7 @@ client.on("message", message => {
     try {
         advancedPerms = message.member.roles.find(role => role.name == "Rot13")  || message.member.roles.find(role => role.name == "Arbiter of Fate") || false;
     }
-    catch {
+    catch(err) {
         advancedPerms = false;
     }
 
@@ -145,9 +155,10 @@ client.on("message", message => {
         return botLogs.send(
             new Discord.RichEmbed()
             .setTitle("Someone sent an invite to a server")
-            .addField("User:", message.author, true)
+            .addField("User:", message.author + " / `" + message.author.tag + "`", true)
             .addField("In channel:", `<#${message.channel.id}>`, true)
             .addField("Message content:", `\`\`\`\n${message.content.replace(/\`/gm, "´")}\n\`\`\``)
+            .addField(`Direct Link:`, `${message.url}`, false)
             .setColor("#ff0000")
         );
     }
@@ -168,14 +179,14 @@ client.on("message", message => {
             try {
                 Qperms = member.roles.find(role => role.name == "user++") || member.roles.find(role => role.name == "Rot13")  || member.roles.find(role => role.name == "Arbiter of Fate") || false;
             }
-            catch {
+            catch(err) {
                 Qperms = false;
             }
 
             try {
                 QadvancedPerms = member.roles.find(role => role.name == "Rot13")  || member.roles.find(role => role.name == "Arbiter of Fate") || false;
             }
-            catch {
+            catch(err) {
                 QadvancedPerms = false;
             }
 
@@ -312,7 +323,7 @@ client.on("message", message => {
             catch(err) {
                 let errRE = new Discord.RichEmbed()
                     .setTitle("📭 Couldn't send DM")
-                    .addField("**To User:**", member.user)
+                    .addField("**To User:**", message.member.user)
                     .addField("**Type of DM:**", "Joined")
                     .addField("**Complete Error:**", `\`${err}\``)
                     .setColor("#ff0000");
@@ -418,7 +429,7 @@ function gotDM(content, user) {
             .addField("**From:**", user)
             .addField("**Content:**", report)
             .setColor("#ff0000");
-        client.guilds.find(guild => guild.id == "430932202621108275").channels.find(channel => channel.id == "489599094793175041").send(rem).then(()=>{
+        client.guilds.find(guild => guild.id == guildID).channels.find(channel => channel.id == "489599094793175041").send(rem).then(()=>{
             user.send(`Successfully sent your report to the admins of the Cult of Jabrils server!`).then(() => {}).catch(err => {});
         });
     }
@@ -428,7 +439,7 @@ function gotDM(content, user) {
             .addField("**User:**", user)
             .addField("**Content:**", content)
             .setColor("#ff0000");
-        client.guilds.find(guild => guild.id == "430932202621108275").channels.find(channel => channel.id == "489605729624522762").send(rem).then(()=>{
+        client.guilds.find(guild => guild.id == guildID).channels.find(channel => channel.id == "489605729624522762").send(rem).then(()=>{
             user.send(`Your DM has been forwarded to the admins of the Cult of Jabrils server.`).then(() => {}).catch(err => {});
         });
     }
@@ -440,6 +451,44 @@ client.on("messageUpdate", (oldmsg, newmsg) => {
     checkBadMessage(newmsg);
 });
 
+
+// Sv443 | 2019-10-25 | #TeamTrees server data channel
+function refreshTreeCount()
+{
+    let xhr = new XMLHttpRequest();
+    xhr.open("GET", "https://teamtrees.org/", true);
+
+    xhr.onreadystatechange = () => {
+        if(xhr.readyState == 4 && xhr.status < 300)
+        {
+            let treeCount = "error";
+            let treeCountLine = "";
+            let htmlDoc = xhr.responseText.split(/\n/gm);
+
+            htmlDoc.forEach(line => {
+                if(line.includes(`id="totalTrees"`))
+                    treeCountLine = line;
+            });
+
+            treeCount = treeCountLine.split(`data-count="`)[1].split(`"`)[0];
+            treeCount = numberWithCommas(parseInt(treeCount));
+
+            let channel = client.guilds.find(g => g.id == guildID).channels.find(c => c.id == treeDataChannelID);
+            channel.setName("trees ꞉ " + treeCount); // template literal wouldn't work with the unicode whitespace char
+        }
+    }
+
+    xhr.send();
+}
+
+/**
+ * Turns a number into a string with commas as thousands separators.
+ * Example: 10000 -> 10,000
+ * @param {Number} x 
+ */
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "‚");
+}
 
 
 
