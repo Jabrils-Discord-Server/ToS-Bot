@@ -24,6 +24,10 @@
     "discord.js": "^11.4.2",
     "erlpack": "github:hammerandchisel/erlpack",
     "node-wrap": "^0.2.0",
-    "svjsl": "^1.6.6"
+    "svjsl": "^1.6.6",
+    "xmlhttprequest": "^1.8.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.4.0"
   }
 }
