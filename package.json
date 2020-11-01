@@ -21,7 +21,7 @@
   "homepage": "https://github.com/Jabrils-Discord-Server/ToS-Bot#readme",
   "dependencies": {
     "bufferutil": "^4.0.1",
-    "discord.js": "^11.4.2",
+    "discord.js": "^12.4.1",
     "erlpack": "github:hammerandchisel/erlpack",
     "node-wrap": "^0.2.0",
     "svjsl": "^1.8.1",
