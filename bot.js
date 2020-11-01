@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const jsl = require("svjsl");
 const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+const https = require("https");
 const client = new Discord.Client();
 const config = require("./config.json");
 const filter = require("./filter.js");
@@ -9,13 +10,25 @@ const newcomerCheck = require("./newcomerCheck.js");
 
 
 const pingModsOnBadWordFilterTriggered = false;
+const jabstatHost = "jabstats.com";
+const jabstatPath = "/pruned";
 
 
 
 
-const randomActivities = ["Abusing the Non-Mods", "Pruning all the newcomers", "Kissing your mother with that mouth", "Banning @everyone", "Secretly overthrowing the admins", "Crashing constantly", "Vaccinating my kids"];
+const randomActivities = [
+    "Abusing the Non-Mods",
+    "Pruning all the newcomers",
+    "Kissing your mother with that mouth",
+    "Banning @everyone",
+    "Secretly overthrowing the admins",
+    "Crashing constantly", "Vaccinating my kids"
+];
 
-const badWordResponses = ["%USER%, do you kiss your mother with that mouth?", "%USER%, \\*beep boop\\* I detect bad word \\*beep boop\\*"];
+const badWordResponses = [
+    "%USER%, do you kiss your mother with that mouth?",
+    "%USER%, \\*beep boop\\* I detect bad word \\*beep boop\\*"
+];
 
 const iconURL = "https://sv443.net/cdn/other/tosboticon.png";
 
@@ -58,10 +71,10 @@ client.on("ready", () => {
     }, 60 * 1000); // every minute
     logCurrentDate();
 
-    refreshTreeCount();
-    setInterval(() => {
-        refreshTreeCount();
-    }, 1000 * 60);
+    // refreshTreeCount();
+    // setInterval(() => {
+    //     refreshTreeCount();
+    // }, 10000 * 60);
 
     client.user.setAvatar(iconURL).then(() => {}).catch(err => {});
 });
@@ -74,17 +87,14 @@ client.on('guildMemberAdd', member => {
     var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
     botLogs.send(`▶ <@${member.user.id}> has joined the server`);
     try {
-        member.send("Hello! We are glad you joined our Cult!\nYou will need to read the rules in the #rules channel to gain access to the server.\nAlso make sure to read the #readme channel to see how to access our programming help channels.\n\nThanks and have fun! :)").then(m => {
+        member.send("Hello! We are glad you joined our Cult!\nYou will need to read the rules in the #rules channel and introduce yourself in the #introduce-yourself channel to gain access to the server.\n\nThanks and have fun! :)").then(m => {
             let URLembed = new Discord.RichEmbed()
                 .setTitle("Here's a few links to the most important channels/messages:")
                 .setDescription("**∙** [Rules (must read to access server)](https://discordapp.com/channels/430932202621108275/528717576357019648)\n"
-                            + "**∙** [How to access programming help channels](https://discordapp.com/channels/430932202621108275/618804574873976843)\n"
-                            + "**∙** [All bots and their commands](https://discordapp.com/channels/430932202621108275/430981000907194370/432163980866486279)\n"
-                            + "**∙** [Our 3D art contests](https://discordapp.com/channels/430932202621108275/431042265868402688/582909817199525894)\n"
-                            + "**∙** [Folding@Home](https://discordapp.com/channels/430932202621108275/431042265868402688/581582035106136093)\n"
-                            + "**∙** [How to format code correctly](https://discordapp.com/channels/430932202621108275/528717576357019648/532909422956249108)\n"
-                            + "**∙** [The cult's GitHub org (source code of some bots)](https://github.com/Jabrils-Discord-Server)")
-                .setFooter("❗️ All messages sent in here are forwarded directly to the admins", "https://images-ext-1.discordapp.net/external/j0DzB2qVolwWd7Y9Y3v1isLDQc6fM3b4rnR6gqxl0Ac/https/cdn.discordapp.com/icons/430932202621108275/a_adb1790c440d6b1e69e22a38126ba774.jpg")
+                            + "**∙** [How to format code correctly](https://discordapp.com/channels/430932202621108275/528717576357019648/662191468320129036)\n"
+                            + "**∙** [The cult's GitHub org (source code of some bots)](https://github.com/Jabrils-Discord-Server)\n\n"
+                            + "To access our community channels, please [introduce yourself in this channel](https://discordapp.com/channels/430932202621108275/430970251174215690)")
+                .setFooter("❗️ All messages sent in here are forwarded directly to the admins")
                 .setColor("#ff3b00");
             member.send(URLembed).then(() => {}).catch(err => {});
         });
@@ -128,8 +138,11 @@ client.on("message", message => {
     var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
 
 
-    if(message.author.bot && message.channel.id === '528717576357019648' && message.author.id != '532483662705590273') return message.delete();
-    else if(message.author.bot) return checkBadMessage(message);
+    if(message.author.bot)
+        return message.delete();
+    else if(message.author.bot)
+        return checkBadMessage(message);
+
     var perms = false;
     try {
         perms = message.member.roles.find(role => role.name == "user++") || message.member.roles.find(role => role.name == "Rot13")  || message.member.roles.find(role => role.name == "Arbiter of Fate") || false;
@@ -167,9 +180,257 @@ client.on("message", message => {
         message.channel.send("Aww man");
 
 
-    var messageContent = message.content.toLowerCase().replace(/([\^\`\´\?\.\-\_\,\s*])/gm, "");
-    let msgC = message.content.toLowerCase().replace(/([\^\`\´\?\.\-\_\,*])/gm, "");
-    if(perms && messageContent == "!prunenewcomers") {
+    var messageContent = message.content.toLowerCase().replace(/([\^`´?.\-_,\s*])/gm, "");
+    let msgC = message.content.toLowerCase().replace(/([\^`´?.\-_,*])/gm, "");
+
+    if (message.channel.id == '528717576357019648') {
+		if (messageContent == "!agree") {
+            console.log("\x1b[32m\x1b[1m[agree]\x1b[0m " + message.author.tag);
+            message.react("✅").then(() => message.delete(3000));
+            let removeRole_newcomer = message.member.guild.roles.find(role => role.name == "newcomer");
+
+            try {
+                let URLembed = new Discord.RichEmbed()
+                    .setTitle("Great, you made it :smiley:")
+                    .setDescription(`You now have access to (almost) the entire server! \n Please read [the #info channel](https://discordapp.com/channels/430932202621108275/430981000907194370) completely as there's important information there.\nAlso tell us a bit more about yourself, your programming skills and why you joined the server in [the #introduce-yourself channel](https://discordapp.com/channels/430932202621108275/430970251174215690). You need to do this in order to get programming help and to gain a few cool perks.\n\n\nThank you and have fun on the server! :)`)
+                    .setColor("#2bff2b");
+                message.member.send(URLembed).then(() => {}).catch(err => {throw new Error(err)});
+            }
+            catch(err) {
+                let errRE = new Discord.RichEmbed()
+                    .setTitle("📭 Couldn't send DM")
+                    .addField("**To User:**", message.member.user)
+                    .addField("**Type of DM:**", "Joined")
+                    .addField("**Complete Error:**", `\`${err}\``)
+                    .setColor("#ff0000");
+                botLogs.send(errRE);
+            }
+
+            message.member.removeRole(removeRole_newcomer);
+            return botLogs.send(`👍 <@${message.author.id}> has agreed to the <#528717576357019648>`);
+        }
+        else if(messageContent == "!ping") {
+            message.channel.send("📶 Pong!").then(m => {
+                message.delete();
+                setTimeout(()=>{
+                    m.delete();
+                }, 3000);
+            });
+        }
+        else if(perms || advancedPerms)
+            return;
+        else
+            message.delete();
+    }
+
+    // Rest in Peace sister Yabe :'(
+    if(messageContent.startsWith("!addrole"))
+    {
+        try {
+            let roleSearch = message.content.substring(8).trim();
+            let roleToAdd = message.guild.roles.find(x => x.name.toLowerCase() === roleSearch.toLowerCase());
+    
+            if (!roleSearch.toLowerCase())
+                return message.reply('Gimmie a role ya big silly');
+    
+            if (roleToAdd == undefined && roleSearch.match(/<|>/gm))
+                roleToAdd = message.guild.roles.find(x => x.name.toLowerCase() === roleSearch.toLowerCase().replace(/<|>/gm, ""));
+            else if (roleToAdd == undefined)
+                return message.reply(`Unfortunately that role, **${roleSearch}**, does not exist`);
+    
+            if (message.member.roles.has(roleToAdd.id))
+                return message.reply('You already have that role!');
+    
+            message.member.addRole(`${roleToAdd.id}`).then(() => message.react(`✅`))
+                .catch(error => {
+                    console.error;
+                    message.react('❎');
+                    if (error == "DiscordAPIError: Missing Permissions")
+                        return message.reply(`You lack the power to gain a role as noble as \`${roleToAdd.name || roleToAdd}\``);
+                    else
+                        return message.reply(`Unexpected error: ${error}`);
+                })
+    
+        } catch (err) {
+            botLogs.send(`There was an error adding a role: ${err}`);
+        }
+    }
+    else if(messageContent.startsWith("!removerole"))
+    {
+        try {
+            let roleSearch = message.content.substring(11).trim();
+            let roleToRemove = message.guild.roles.find(x => x.name.toLowerCase() === roleSearch.toLowerCase());
+    
+            if (!roleSearch.toLowerCase())
+                return message.reply('Gimmie a role ya big silly');
+    
+            if (roleToRemove == undefined)
+                return message.reply(`Unfortunately that role, **${roleSearch}**, does not exist`);
+    
+            if (!message.member.roles.has(roleToRemove.id))
+                return message.reply("You don't have that role!");
+    
+            message.member.removeRole(`${roleToRemove.id}`).then(() => message.react(`✅`))
+            .catch(error => {
+                console.error;
+                message.react('❎');
+                if (error == "DiscordAPIError: Missing Permissions")
+                    return message.reply(`You lack the power to remove a role as noble as \`${roleToRemove.name || roleToRemove}\``);
+                else
+                    return message.reply(`Unexpected error: ${error}`);
+            })
+        } catch (err) {
+            botLogs.send(`There was a problem while removing the role: ${err}`);
+        }
+    }
+    else if(messageContent.startsWith("!avatar"))
+    {
+        try {
+            var targetName = message.content.substring(7).trim();
+            var target;
+    
+            if (targetName.includes('@'))
+                target = message.mentions.users.first();
+            else if (!jsl.isEmpty(targetName) && !targetName.includes('@')) {
+                try {
+                    target = message.guild.members.find(member => [member.displayName.toLowerCase(), member.user.username.toLowerCase()].includes(targetName.toLowerCase())).user;
+                }
+                catch (err) {
+                    // If the supplied name cannot be resolved, check for any discriminators and strip them incase of a "silent mention" used to autofill the target's name
+                    //We do the discriminator check after the name check fails, incase the target has a # in their name
+                    targetName = targetName.substring(0, targetName.indexOf('#'));
+                    target = message.guild.members.find(member => [member.displayName.toLowerCase(), member.user.username.toLowerCase()].includes(targetName.toLowerCase())).user;
+                }
+            }
+            else if (jsl.isEmpty(targetName))
+                target = message.author;
+    
+            let embed = new Discord.RichEmbed()
+                .setTitle(`**${target.username}'s** Avatar`)
+                .setImage(target.displayAvatarURL)
+                .setColor("#5585d1");
+            return message.channel.send(embed);
+    
+        } catch (err) {
+            // If no user can be found, the error will be caught here
+            //Check for perms incase yabe is no longer required to be an administrator in the future (@illusion luv u bby)
+            if (target == null) {
+                message.react('💤');
+                message.channel.send(`❌ user \`${targetName}\` not found ❌`).then(respMessage => {
+                    if (message.guild.me.hasPermission("MANAGE_MESSAGES"))
+                        respMessage.delete(10000);
+                });
+            }
+            else
+                console.log(err);
+        }
+    }
+    else if(messageContent.startsWith("!whois"))
+    {
+        try {
+            let maxUsersToDisplay = 25;
+    
+            let roles = message.guild.roles;
+            let roleKeys = roles.keyArray();
+    
+            let sendEmbed = (name, role) => {
+                let memberNames = [];
+    
+                let roleKeys = role.keyArray()
+                roleKeys.forEach(key => memberNames.push(role.get(key)));
+    
+                let emb = new Discord.RichEmbed();
+    
+                emb.setColor("#5585d1");
+    
+                let memberUsers = "";
+                let moreThanMax = false;
+                let memberCount = memberNames.length;
+                let tooManyText = "";
+    
+                if (memberNames.length > maxUsersToDisplay)
+                {
+                    memberNames.splice(maxUsersToDisplay);
+                    moreThanMax = true;
+                    tooManyText = " (too many to display)";
+                }
+                
+                memberNames.forEach(member => memberUsers += member.user + "\n");
+    
+                if(moreThanMax)
+                    memberUsers += "...";
+    
+                emb.addField(`Who is ${name}:`, memberUsers);
+                emb.setFooter(`${memberCount} users have this role${tooManyText}.`)
+                message.channel.send(emb);
+            };
+    
+            roleKeys.forEach(key => {
+                let role = roles.get(key);
+                let name = role.name;
+                let argS = message.content.substring(6).trim();
+                if (name == argS) {
+                    sendEmbed(name, role.members);
+                    return;
+                }
+            });
+        } catch (err) {
+            botLogs.send(`Error in command !whois: ${err}`);
+        }
+    }
+    else if(messageContent == "!roles")
+    {
+        // Role names inside the blacklist won't be included in the final list
+        // Find all roles below the Coding Yabe Sei role, filter out the blacklist roles, and filter out any roles with the Administrator permission 
+        // (to avoid any no perms message if a user were to try and add the role) - and then sort the filter and convert it into an array
+        try {
+            var blackList = ["@everyone"];
+
+            let yabeRole = message.guild.roles.find(yaberole => yaberole.name == "ToS-Bot");
+            let roles = message.guild.roles.filter(allRoles => allRoles.calculatedPosition < yabeRole.calculatedPosition && !blackList.includes(allRoles.name)
+                && !allRoles.hasPermission("ADMINISTRATOR"))
+                .sort().array();
+
+
+
+            let embed = new Discord.RichEmbed()
+                .setColor("#5585d1")
+                .setTitle(`These are the ${roles.length} roles avaliable to you for ` + message.guild.name + '\n')
+                .setDescription(roles.join(' ') + "\n\n**Add roles using ToS with `!addrole <role name>`**")
+                .setFooter("Note: Only roles below the `ToS-Bot` role are displayed")
+                .setTimestamp();
+
+            message.channel.send(embed);
+            //console.log(roles.length)
+        } catch (err) {
+            console.log('There was an error displaying roles: ' + err);
+        }
+    }
+    else if(messageContent == "!help")
+    {
+        try
+        {
+            let embed = new Discord.RichEmbed()
+                .setColor("#5585d1")
+                .setTitle("These are my commands:")
+                .setDescription(`\
+\`!help\` - Shows this message
+\`!roles\` - Displays available roles
+\`!addrole <role_name>\` - Grants you a role
+\`!removerole <role_name>\` - Removes a role
+\`!whois <role_name>\` - Shows users that have the specified role
+\`!avatar <user>\` - Displays the avatar of a user or yourself if omitted
+`)
+                .setFooter("These commands were stolen from Coding Yabe Sei, Rest in Peace, Sis :(");
+
+            message.channel.send(embed);
+        }
+        catch(err)
+        {
+            botLogs.send(`Error while displaying help: ${err}`);
+        }
+    }
+    else if(perms && messageContent == "!prunenewcomers") {
         var allNewcomers = [];
         var newcomerRole = message.member.guild.roles.find(role => role.id == "532550411962286125");
         message.guild.members.forEach(member => {
@@ -190,7 +451,8 @@ client.on("message", message => {
                 QadvancedPerms = false;
             }
 
-            if(member.roles.has(newcomerRole.id) && member.roles.size <= 2 && !Qperms && !QadvancedPerms) allNewcomers.push(member);
+            if(member.roles.has(newcomerRole.id) && member.roles.size <= 2 && !Qperms && !QadvancedPerms)
+                allNewcomers.push(member);
         });
         message.channel.send(`Should I really prune all ${allNewcomers.length} newcomers?\nClick the checkmark within 5 seconds to commence mass destruction (I really hope you know what you're doing).`).then(m => {
             m.react("✅").then(s => {
@@ -204,10 +466,10 @@ client.on("message", message => {
                             allNewcomers.forEach(member => {
                                 try {
                                     member.send("You were pruned from the Cult of Jabrils server in accordance with our rules, however if you simply did not have time to read our rules and wish to rejoin the server, you can do so with this link: https://discord.gg/EZagHBx \n\nWe thank you for understanding\n- your mod team 😃").then(() => {
-                                        member.kick().then(() => {}).catch(err => {
+                                        member.kick().catch(err => {
                                             return message.channel.send(`‼ Couldn't prune member ${member.user.tag} due to an error: ${err}`);
                                         });
-                                    }).catch(err => {throw new Error(err)});
+                                    }).catch(err => botLogs.send(`Error while DMing \`${member.user.tag}\` with the prune reason message: ${err}`));
                                     dmCount++;
                                 }
                                 catch(err) {
@@ -216,6 +478,9 @@ client.on("message", message => {
                             });
                             var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
                             botLogs.send(`🤧 Farewell to **${allNewcomers.length}** pruned member${allNewcomers.length == 1 ? "" : "s"}!\nPruning initiated by: ${message.author}\nI DM-ed ${dmCount != allNewcomers.length ? (dmCount + " of " + allNewcomers.length) : "all"} users with the reason message.`);
+
+                            jabstatWH(null, allNewcomers, message.author);
+
                             return message.channel.send(`✅ Successfully pruned all ${allNewcomers.length} newcomers!`);
                         }
                         catch(err) {
@@ -226,6 +491,47 @@ client.on("message", message => {
                 }).catch(err => {
                     message.channel.send("5 seconds have passed, aborting.");
                 });
+            });
+        });
+    }
+    else if(perms && messageContent == "!testprunenewcomers") {
+        var allNewcomers = [];
+        var newcomerRole = message.member.guild.roles.find(role => role.id == "532550411962286125");
+        message.guild.members.forEach(member => {
+            let Qperms = false;
+            let QadvancedPerms = false;
+
+            try {
+                Qperms = member.roles.find(role => role.name == "user++") || member.roles.find(role => role.name == "Rot13")  || member.roles.find(role => role.name == "Arbiter of Fate") || false;
+            }
+            catch(err) {
+                Qperms = false;
+            }
+
+            try {
+                QadvancedPerms = member.roles.find(role => role.name == "Rot13")  || member.roles.find(role => role.name == "Arbiter of Fate") || false;
+            }
+            catch(err) {
+                QadvancedPerms = false;
+            }
+
+            if(member.roles.has(newcomerRole.id) && member.roles.size <= 2 && !Qperms && !QadvancedPerms)
+                allNewcomers.push(member);
+        });
+        message.channel.send(`Should I really prune all ${allNewcomers.length} newcomers?\nClick the checkmark within 5 seconds to commence mass destruction (I really hope you know what you're doing).`).then(m => {
+            m.delete().then(m => {
+                let dmCount = 0;
+                try {
+                    var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
+                    botLogs.send(`TEST PRUNE - NOBODY WAS KICKED!\n🤧 Farewell to **${allNewcomers.length}** pruned member${allNewcomers.length == 1 ? "" : "s"}!\nPruning initiated by: ${message.author}\nI DM-ed ${dmCount != allNewcomers.length ? (dmCount + " of " + allNewcomers.length) : "all"} users with the reason message.`);
+
+                    jabstatWH(null, allNewcomers, message.author);
+
+                    return message.channel.send(`✅ Successfully pruned all ${allNewcomers.length} newcomers!`);
+                }
+                catch(err) {
+                    return message.channel.send(`‼ Fuck, I am error, please fix: ${err}`);
+                }
             });
         });
     }
@@ -248,7 +554,7 @@ client.on("message", message => {
     else if(perms && msgC.split(" ")[0] == "!mark") {
         var evidenceChannel = client.channels.find(channel => channel.id == "586407357458939906");
         let markNbr = parseInt(msgC.split(" ")[1]);
-        if(markNbr <= 0 || markNbr > 100 || isNaN(markNbr)) {
+        if(markNbr <= 0 || markNbr > 250 || isNaN(markNbr)) {
             message.author.send("The number of messages to mark has to be above 0 and below 250, not " + markNbr + ". I set it to the default of 25 instead.");
             markNbr = 25;
         }
@@ -288,7 +594,7 @@ client.on("message", message => {
                         .setFooter(`Initiated by ${message.author.tag}`)
                         .setColor("#5585d1"); 
                 }
-            };
+            }
 
             evidenceChannel.send(embed).then(() => {}).catch(err => message.channel.send(`Error: ${err}`));
         }).catch(err => evidenceChannel.send(`Error: ${err}`));
@@ -305,46 +611,54 @@ client.on("message", message => {
         }).catch(err => console.log("err2! " + err));
         else return;
     }
-
-    if (message.channel.id === '528717576357019648') {
-        var messageContent = message.content.toLowerCase().replace(/([\^\`\´\?\.\-\_\,\s*])/gm, "");
-		if (messageContent == "!agree") {
-            console.log("\x1b[32m\x1b[1m[agree]\x1b[0m " + message.author.tag);
-            message.react("✅").then(m => message.delete(3000));
-            let removeRole_newcomer = message.member.guild.roles.find(role => role.name == "newcomer");
-
-            try {
-                let URLembed = new Discord.RichEmbed()
-                    .setTitle("Great, you made it :smiley:")
-                    .setDescription(`You now have access to (almost) the entire server! \n Please read [the #info channel](https://discordapp.com/channels/430932202621108275/430981000907194370) completely as there's important information there.\nAlso tell us a bit more about yourself, your programming skills and why you joined the server in [the #introduce-yourself channel](https://discordapp.com/channels/430932202621108275/430970251174215690). You need to do this in order to get programming help and to gain a few cool perks.\n\n\nThank you and have fun on the server! :)`)
-                    .setColor("#2bff2b");
-                message.member.send(URLembed).then(() => {}).catch(err => {throw new Error(err)});
-            }
-            catch(err) {
-                let errRE = new Discord.RichEmbed()
-                    .setTitle("📭 Couldn't send DM")
-                    .addField("**To User:**", message.member.user)
-                    .addField("**Type of DM:**", "Joined")
-                    .addField("**Complete Error:**", `\`${err}\``)
-                    .setColor("#ff0000");
-                botLogs.send(errRE);
-            }
-
-            message.member.removeRole(removeRole_newcomer);
-			var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
-            return botLogs.send(`👍 <@${message.author.id}> has agreed to the <#528717576357019648>`);
-        }
-        else if(messageContent == "!ping") {
-            message.channel.send("📶 Pong!").then(m => {
-                message.delete();
-                setTimeout(()=>{
-                    m.delete();
-                }, 3000);
-            });
-        }
-        else if(!perms && !perms) message.delete();
-    }
 });
+
+/**
+ * @param {String|null} error
+ * @param {Discord.GuildMember} prunedUsers
+ * @param {Discord.User} prunedBy
+ */
+function jabstatWH(error, prunedUsers, prunedBy)
+{
+    prunedUsers = prunedUsers.map(v => {
+        return v.user.id;
+    });
+
+    var botLogs = client.channels.find(channel => channel.id == "489605729624522762");
+
+    let whData = JSON.stringify({
+        "error": error !== null,
+        "message": error || "Ok",
+        "prunedCount": prunedUsers ? prunedUsers.length || 0 : 0,
+        "prunedUsers": prunedUsers ? prunedUsers || [] : [],
+        "prunedBy": prunedBy ? prunedBy.id : null
+    }, null, 4);
+
+    let req = https.request({
+        method: "POST",
+        hostname: jabstatHost,
+        port: 443,
+        path: jabstatPath,
+        headers: {
+            "Content-Type": "application/json",
+            "Content-Length": whData.length,
+            "Connection": "keep-alive",
+            "Accept": "*/*"
+        }
+    }, (res) => {
+        if(res.statusCode < 300)
+            console.log(`Jabstat XHR ok (${res.statusCode})`);
+        else
+            botLogs.send(`Error while sending webhook request to Jabstat: HTTP ${res.statusCode} - response: \`${res.statusMessage}\``);
+    });
+
+    req.on("error", err => {
+        botLogs.send(`Error while sending webhook request to Jabstat: ${err}`);
+    });
+
+    req.write(whData);
+    req.end();
+}
 
 /**
  * @param {Discord.Message} message
@@ -352,7 +666,7 @@ client.on("message", message => {
 function checkBadMessage(message) {
     var originalMessageContent = message.content.toLowerCase();
     var messageContent = message.content.toLowerCase().replace(/([\|\^\`\´\?\.\-\_\,\s*])/gm, "");
-    var messageLightCheckContent = message.content.toLowerCase();
+    var messageLightCheckContent = message.content.toLowerCase().replace(/\|\|/gm, "");
 
     var isbadword = false, lightcheckisbadword = false, triggerWords = [], triggerWordsLight = [];
     for (var i in filter) {
@@ -421,7 +735,6 @@ function logCurrentDate() {
  * @param {Discord.User} user
  */
 function gotDM(content, user) {
-    console.log(content);
     if(content.startsWith("!report ")) {
         let report = content.replace("!report ", "");
         let rem = new Discord.RichEmbed()
@@ -434,6 +747,18 @@ function gotDM(content, user) {
         });
     }
     else {
+        if(content.includes("discord.gg/") || content.includes("discordapp.com/invite") || content.includes("discord.gg/invite"))
+            return user.send("It seems like your message contains an invite to a server.\nDue to people spamming the DMs with invite farm links, this DM will **not** be forwarded to the admins.");
+
+        let isInGuild = false;
+        client.guilds.find(g => g.id == guildID).members.forEach(mem => {
+            if(user.id == mem.id)
+                isInGuild = true;
+        });
+
+        if(!isInGuild)
+            return user.send("It seems like you are not a member of the Cult of Jabrils server anymore. This DM will **not** be forwarded to the admins.");
+
         let rem = new Discord.RichEmbed()
             .setTitle("**I just got a DM:**")
             .addField("**User:**", user)
@@ -453,42 +778,51 @@ client.on("messageUpdate", (oldmsg, newmsg) => {
 
 
 // Sv443 | 2019-10-25 | #TeamTrees server data channel
-function refreshTreeCount()
-{
-    let xhr = new XMLHttpRequest();
-    xhr.open("GET", "https://teamtrees.org/", true);
+// function refreshTreeCount()
+// {
+//     let xhr = new XMLHttpRequest();
+//     xhr.open("GET", "https://teamtrees.org/", true);
 
-    xhr.onreadystatechange = () => {
-        if(xhr.readyState == 4 && xhr.status < 300)
-        {
-            let treeCount = "error";
-            let treeCountLine = "";
-            let htmlDoc = xhr.responseText.split(/\n/gm);
+//     xhr.onreadystatechange = () => {
+//         if(xhr.readyState == 4 && xhr.status < 300)
+//         {
+//             if(xhr.responseText == undefined)
+//                 return;
 
-            htmlDoc.forEach(line => {
-                if(line.includes(`id="totalTrees"`))
-                    treeCountLine = line;
-            });
+//             let treeCount = "error";
+//             let treeCountLine = "";
+//             let htmlDoc = xhr.responseText.split(/\n/gm);
 
-            treeCount = treeCountLine.split(`data-count="`)[1].split(`"`)[0];
-            treeCount = numberWithCommas(parseInt(treeCount));
+//             htmlDoc.forEach(line => {
+//                 if(line.includes(`id="totalTrees"`))
+//                     treeCountLine = line;
+//             });
 
-            let channel = client.guilds.find(g => g.id == guildID).channels.find(c => c.id == treeDataChannelID);
-            channel.setName("trees ꞉ " + treeCount); // template literal wouldn't work with the unicode whitespace char
-        }
-    }
+//             treeCount = treeCountLine.split(`data-count="`)[1];
+//             if(jsl.isEmpty(treeCount)) return;
 
-    xhr.send();
-}
+//             treeCount = treeCount.split(`"`)[0];
+//             if(jsl.isEmpty(treeCount)) return;
+            
+//             treeCount = numberWithCommas(parseInt(treeCount));
+//             if(jsl.isEmpty(treeCount)) return;
 
-/**
- * Turns a number into a string with commas as thousands separators.
- * Example: 10000 -> 10,000
- * @param {Number} x 
- */
-function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "‚");
-}
+//             let channel = client.guilds.find(g => g.id == guildID).channels.find(c => c.id == treeDataChannelID);
+//             channel.setName("trees ꞉ " + treeCount); // template literal wouldn't work with the unicode whitespace char
+//         }
+//     }
+
+//     xhr.send();
+// }
+
+// /**
+//  * Turns a number into a string with commas as thousands separators.
+//  * Example: 10000 -> 10,000
+//  * @param {Number} x 
+//  */
+// function numberWithCommas(x) {
+//     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "‚");
+// }
 
 
 
