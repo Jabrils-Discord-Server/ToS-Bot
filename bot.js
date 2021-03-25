@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 const jsl = require("svjsl");
-const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+// const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const https = require("https");
 const client = new Discord.Client();
 const config = require("./config.json");
@@ -37,7 +37,7 @@ const iconURL = "https://sv443.net/cdn/other/tosboticon.png";
 
 
 
-const treeDataChannelID = "637387745320370246";
+// const treeDataChannelID = "637387745320370246";
 const guildID = "430932202621108275";
 
 
@@ -76,7 +76,7 @@ client.on("ready", () => {
     //     refreshTreeCount();
     // }, 10000 * 60);
 
-    client.user.setAvatar(iconURL).then(() => {}).catch(err => {});
+    client.user.setAvatar(iconURL).then(() => {}).catch(() => {});
 });
 
 client.on('guildMemberAdd', member => {
@@ -87,7 +87,7 @@ client.on('guildMemberAdd', member => {
     var botLogs = client.channels.cache.find(channel => channel.id == "489605729624522762");
     botLogs.send(`▶ <@${member.user.id}> has joined the server`);
     try {
-        member.send("Hello! We are glad you joined our Cult!\nYou will need to read the rules in the #rules channel and introduce yourself in the #introduce-yourself channel to gain access to the server.\n\nThanks and have fun! :)").then(m => {
+        member.send("Hello! We are glad you joined our Cult!\nYou will need to read the rules in the #rules channel and introduce yourself in the #introduce-yourself channel to gain access to the server.\n\nThanks and have fun! :)").then(() => {
             let URLembed = new Discord.MessageEmbed()
                 .setTitle("Here's a few links to the most important channels/messages:")
                 .setDescription("**∙** [Rules (must read to access server)](https://discordapp.com/channels/430932202621108275/528717576357019648)\n"
@@ -96,7 +96,7 @@ client.on('guildMemberAdd', member => {
                             + "To access our community channels, please [introduce yourself in this channel](https://discordapp.com/channels/430932202621108275/430970251174215690)")
                 .setFooter("❗️ All messages sent in here are forwarded directly to the admins")
                 .setColor("#ff3b00");
-            member.send(URLembed).then(() => {}).catch(err => {});
+            member.send(URLembed).then(() => {}).catch(() => {});
         });
     }
     catch(err) {
@@ -117,18 +117,18 @@ client.on("guildMemberRemove", member => {
     return botLogs.send(`❌ \`${member.user.tag}\` has left the server`);
 });
 
-const getCircularReplacer = () => {
-    const seen = new WeakSet();
-    return (key, value) => {
-      if (typeof value === "object" && value !== null) {
-        if (seen.has(value)) {
-          return;
-        }
-        seen.add(value);
-      }
-      return value;
-    };
-};
+// const getCircularReplacer = () => {
+//     const seen = new WeakSet();
+//     return (key, value) => {
+//       if (typeof value === "object" && value !== null) {
+//         if (seen.has(value)) {
+//           return;
+//         }
+//         seen.add(value);
+//       }
+//       return value;
+//     };
+// };
 
 client.on("message", message => {
     if(!message.author.bot && message.channel.type == "dm") return gotDM(message.content, message.channel);
@@ -170,13 +170,13 @@ client.on("message", message => {
             .setTitle("Someone sent an invite to a server")
             .addField("User:", message.author + " / `" + message.author.tag + "`", true)
             .addField("In channel:", `<#${message.channel.id}>`, true)
-            .addField("Message content:", `\`\`\`\n${message.content.replace(/\`/gm, "´")}\n\`\`\``)
+            .addField("Message content:", `\`\`\`\n${message.content.replace(/`/gm, "´")}\n\`\`\``)
             .addField(`Direct Link:`, `${message.url}`, false)
             .setColor("#ff0000")
         );
     }
 
-    if(message.content.replace(/\!\?\./gm, "").toLowerCase() == "creeper")
+    if(message.content.replace(/!\?\./gm, "").toLowerCase() == "creeper")
         message.channel.send("Aww man");
 
 
@@ -461,12 +461,12 @@ client.on("message", message => {
                 allNewcomers.push(member);
         });
         message.channel.send(`Should I really prune all ${allNewcomers.length} newcomers?\nClick the checkmark within 5 seconds to commence mass destruction (I really hope you know what you're doing).`).then(m => {
-            m.react("✅").then(s => {
+            m.react("✅").then(() => {
                 var filter = (reaction, user) => {
                     return ['✅'].includes(reaction.emoji.name) && user.id === message.author.id;
                 };
                 m.awaitReactions(filter, { max: 1, time: (5 * 1000), errors: ['time'] }).then(r => {
-                    if(r.first().emoji.name == "✅") m.delete().then(m => {
+                    if(r.first().emoji.name == "✅") m.delete().then(() => {
                         let dmCount = 0;
                         try {
                             allNewcomers.forEach(member => {
@@ -494,15 +494,16 @@ client.on("message", message => {
                         }
                     });
                     else return message.channel.send("‼ Oh shit, I am error! Aborting.");
-                }).catch(err => {
+                }).catch(() => {
                     message.channel.send("5 seconds have passed, aborting.");
                 });
             });
         });
     }
     else if(perms && messageContent == "!testprunenewcomers") {
-        var allNewcomers = [];
-        var newcomerRole = message.member.guild.roles.cache.find(role => role.id == "532550411962286125");
+        allNewcomers = [];
+        newcomerRole = message.member.guild.roles.cache.find(role => role.id == "532550411962286125");
+
         message.guild.members.forEach(member => {
             let Qperms = false;
             let QadvancedPerms = false;
@@ -525,7 +526,7 @@ client.on("message", message => {
                 allNewcomers.push(member);
         });
         message.channel.send(`Should I really prune all ${allNewcomers.length} newcomers?\nClick the checkmark within 5 seconds to commence mass destruction (I really hope you know what you're doing).`).then(m => {
-            m.delete().then(m => {
+            m.delete().then(() => {
                 let dmCount = 0;
                 try {
                     var botLogs = client.channels.cache.find(channel => channel.id == "489605729624522762");
@@ -608,9 +609,9 @@ client.on("message", message => {
     }
 
     if(advancedPerms) {
-        var botLogs = client.channels.cache.find(channel => channel.id == "489605729624522762");
-        if(messageContent == "!restart") botLogs.send(`♻ <@${message.author.id}> just restarted me`).then(m => {
-            message.delete().then(r => {
+        botLogs = client.channels.cache.find(channel => channel.id == "489605729624522762");
+        if(messageContent == "!restart") botLogs.send(`♻ <@${message.author.id}> just restarted me`).then(() => {
+            message.delete().then(() => {
                 console.log("\x1b[31m\x1b[1m[restart]\x1b[0m " + message.author.tag);
                 process.exit(2);
             }).catch(err => console.log("err! " + err));
@@ -671,7 +672,7 @@ function jabstatWH(error, prunedUsers, prunedBy)
  */
 function checkBadMessage(message) {
     var originalMessageContent = message.content.toLowerCase();
-    var messageContent = message.content.toLowerCase().replace(/([\|\^\`\´\?\.\-\_\,\s*])/gm, "");
+    var messageContent = message.content.toLowerCase().replace(/([|^`´?.\-_,\s*])/gm, "");
     var messageLightCheckContent = message.content.toLowerCase().replace(/\|\|/gm, "");
 
     var isbadword = false, lightcheckisbadword = false, triggerWords = [], triggerWordsLight = [];
@@ -693,40 +694,40 @@ function checkBadMessage(message) {
         .setTitle(`‼ There could have been a bad word in the following message:`)
         .addField("User:", `<@${message.author.id}>`, true)
         .addField("Channel:", `<#${message.channel.id.toString()}>`, true)
-        .addBlankField()
+        .addField("\u200B", "\u200B")
         .addField("Content:", `\`\`\`\n${originalMessageContent.replace(/`/gm, "´")}\n\`\`\``, false)
-        .addBlankField()
+        .addField("\u200B", "\u200B")
         .addField(`Triggered on word${triggerWords.length == 1 ? "" : "s"}:`, `\`\`\`\n${triggerWords.join(", ")}\`\`\``, true)
-        .addBlankField()
+        .addField("\u200B", "\u200B")
         .setDescription(lightcheckisbadword ? "**I deleted their message as the chance the message was toxic was pretty high.**" : "**I didn't delete their message as the chance the message was toxic was too low.**")
         .setColor("#ffaa00")
-        .setFooter("(\` replaced with ´) - " + new Date().toUTCString());
+        .setFooter("(` replaced with ´) - " + new Date().toUTCString());
         if(!lightcheckisbadword) botLogs.send(embed);
     }
 
     if(lightcheckisbadword) {
         let response = badWordResponses[jsl.randRange(0, badWordResponses.length - 1)];
-        message.channel.send(response.replace("%USER%", message.member)).then(() => {}).catch(err => {});
-        message.author.send(`You might have said a bad word which I had to filter out!\n\n\n**Channel:** \`#${message.channel.name}\`\n\n**Message:**\n\`\`\`${originalMessageContent}\`\`\`\n\n**The filter triggered on the ${(triggerWords.length <= 1 ? "word:** \`" : "words:** \`") + jsl.readableArray(triggerWords, ", ", " and ")}\`\n\n\nPlease understand that we have to do this since we got quite a few trolls / spammers in the last couple of months.\n\nThanks :)`).catch(err => {});
-        message.delete().then(m => {
+        message.channel.send(response.replace("%USER%", message.member)).then(() => {}).catch(() => {});
+        message.author.send(`You might have said a bad word which I had to filter out!\n\n\n**Channel:** \`#${message.channel.name}\`\n\n**Message:**\n\`\`\`${originalMessageContent}\`\`\`\n\n**The filter triggered on the ${(triggerWords.length <= 1 ? "word:** `" : "words:** `") + jsl.readableArray(triggerWords, ", ", " and ")}\`\n\n\nPlease understand that we have to do this since we got quite a few trolls / spammers in the last couple of months.\n\nThanks :)`).catch(() => {});
+        message.delete().then(() => {
             if(!message.author.bot) {
                 var botLogs = client.channels.cache.find(channel => channel.id == "489605729624522762");
                 let embed = new Discord.MessageEmbed()
                 .setTitle(`‼ Bad word filter was triggered, message was deleted`)
                 .addField("User:", `<@${message.author.id}>`, true)
                 .addField("Channel:", `<#${message.channel.id.toString()}>`, true)
-                .addBlankField()
+                .addField("\u200B", "\u200B")
                 .addField("Content:", `\`\`\`\n${originalMessageContent.replace(/`/gm, "´")}\n\`\`\``, false)
-                .addBlankField()
+                .addField("\u200B", "\u200B")
                 .addField(`Triggered on word${triggerWords.length == 1 ? "" : "s"}:`, `\`\`\`\n${triggerWords.join(", ")}\`\`\``, true)
                 .setColor("#ff0000")
-                .setFooter("(\` replaced with ´) - " + new Date().toUTCString());
+                .setFooter("(` replaced with ´) - " + new Date().toUTCString());
 
                 if(pingModsOnBadWordFilterTriggered === true) botLogs.send(`${message.guild.roles.cache.find(role => role.id == "430952058200260608")} ${message.guild.roles.cache.find(role => role.id == "430950769710202880")}`);
-                if(isbadword && lightcheckisbadword) return botLogs.send(embed).then(() => {}).catch(err => {});
+                if(isbadword && lightcheckisbadword) return botLogs.send(embed).then(() => {}).catch(() => {});
                 else return;
             }
-        }).catch(err => {});
+        }).catch(() => {});
     }
 }
 
@@ -749,7 +750,7 @@ function gotDM(content, user) {
             .addField("**Content:**", report)
             .setColor("#ff0000");
         client.guilds.cache.find(guild => guild.id == guildID).channels.cache.find(channel => channel.id == "489599094793175041").send(rem).then(()=>{
-            user.send(`Successfully sent your report to the admins of the Cult of Jabrils server!`).then(() => {}).catch(err => {});
+            user.send(`Successfully sent your report to the admins of the Cult of Jabrils server!`).then(() => {}).catch(() => {});
         });
     }
     else {
@@ -771,7 +772,7 @@ function gotDM(content, user) {
             .addField("**Content:**", content)
             .setColor("#ff0000");
         client.guilds.cache.find(guild => guild.id == guildID).channels.cache.find(channel => channel.id == "489605729624522762").send(rem).then(()=>{
-            user.send(`Your DM has been forwarded to the admins of the Cult of Jabrils server.`).then(() => {}).catch(err => {});
+            user.send(`Your DM has been forwarded to the admins of the Cult of Jabrils server.`).then(() => {}).catch(() => {});
         });
     }
 }
@@ -814,7 +815,7 @@ client.on("messageUpdate", (oldmsg, newmsg) => {
 //             if(jsl.isEmpty(treeCount)) return;
 
 //             let channel = client.guilds.cache.find(g => g.id == guildID).channels.find(c => c.id == treeDataChannelID);
-//             channel.setName("trees ꞉ " + treeCount); // template literal wouldn't work with the unicode whitespace char
+//             channel.setName("trees ꞉ " + treeCount); // template literal wouldn't work with the unicode whitespace char
 //         }
 //     }
 
