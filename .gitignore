@@ -1,2 +1,6 @@
 config.json
-node_modules/
+node_modules
+wrapper.log
+error.log
+grep
+sugma.json
