@@ -1,6 +1,5 @@
 config.json
 node_modules
-wrapper.log
 error.log
 grep
 sugma.json
