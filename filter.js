@@ -7,5 +7,9 @@ module.exports =  [
    "Chink",
    "Spick",
    "Nigga",
-   "Kike"
+   "Kike",
+   "Dyke",
+   "Fag",
+   "Tranny",
+   "Trannies"
 ];
